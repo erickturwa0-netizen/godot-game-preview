@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Fruitblade</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; font-family: system-ui, sans-serif; }
+    #canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+    #err {
+      position: fixed; inset: 0; display: none; place-content: center; text-align: center;
+      background: #111; padding: 24px; z-index: 20;
+    }
+    #err.visible { display: grid; }
+    #err h2 { color: #ff6b6b; margin-bottom: 12px; }
+    #err button { margin-top: 16px; padding: 10px 20px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" tabindex="0"></canvas>
+  <div id="err">
+    <h2>Hitilafu</h2>
+    <p id="errmsg">Inapakia...</p>
+    <button onclick="location.reload()">Jaribu tena</button>
+  </div>
+  <script>
+    (() => {
+      const errEl = document.getElementById('err');
+      const errmsg = document.getElementById('errmsg');
+      const showErr = (msg) => {
+        errmsg.textContent = msg || 'Haiwezi kuanzisha mchezo';
+        errEl.classList.add('visible');
+        console.error(msg);
+      };
+
+      const config = {
+        args: [],
+        canvasResizePolicy: 2,
+        emscriptenPoolSize: 8,
+        ensureCrossOriginIsolationHeaders: true,
+        executable: "index",
+        experimentalVK: false,
+        fileSizes: { "index.pck": 6853920, "index.wasm": 39514754 },
+        focusCanvas: true,
+        gdextensionLibs: [],
+        godotPoolSize: 4
+      };
+
+      const canvas = document.getElementById('canvas');
+
+      window.addEventListener('error', e => showErr('Error: ' + (e.message || 'unknown')));
+      window.addEventListener('unhandledrejection', e => showErr('Promise error: ' + (e.reason || 'rejected')));
+
+      const start = async () => {
+        try {
+          if (typeof Engine === 'undefined') throw new Error('Engine (index.js) haikupakiwa');
+          const missing = Engine.getMissingFeatures({ threads: false });
+          if (missing.length) {
+            console.warn('Missing features:', missing);
+          }
+
+          const engine = new Engine({ ...config, canvas });
+          await engine.startGame();
+          canvas.focus();
+        } catch (err) {
+          showErr(err.message || String(err));
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = 'index.js';
+      script.onload = () => {
+        errmsg.textContent = 'Engine imepakiwa, inaanza mchezo...';
+        start();
+      };
+      script.onerror = () => showErr('index.js haikupakiwa (network/CORS)');
+      document.head.appendChild(script);
+    })();
+  </script>
+</body>
+</html>
